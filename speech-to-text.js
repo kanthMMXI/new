@@ -12,6 +12,10 @@ recognition.onstart = function() {
     console.log("Speech recognition started...");  // Log when recognition starts
 };
 
+recognition.onspeechend = function() {
+    console.log("Speech ended..."); // Log when speech ends (helps to check if audio was captured)
+};
+
 recognition.onresult = function(event) {
     console.log("Speech result event:", event);  // Log entire event for debugging
     const transcript = event.results[0][0].transcript;  // Get the transcript from the event
@@ -27,8 +31,16 @@ recognition.onresult = function(event) {
 };
 
 recognition.onerror = function(event) {
-    console.error("Speech recognition error", event.error);  // Log any errors encountered
+    console.error("Speech recognition error:", event.error);  // Log any errors encountered
     alert("Error with speech recognition: " + event.error);  // Show error message
+};
+
+recognition.onnomatch = function() {
+    console.log("No speech match found.");  // Log when no speech is detected or matched
+};
+
+recognition.onaudioend = function() {
+    console.log("Audio input ended.");  // Log when audio has ended
 };
 
 document.getElementById("start-recording").addEventListener("click", function() {
