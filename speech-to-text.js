@@ -1,24 +1,26 @@
-async function translateText() {
-    let text = document.getElementById('textInput').value;
-    console.log("Text to translate:", text);  // Debug: Check the text passed to the translation API
+// Initialize Speech Recognition API
+let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'it-IT';  // Italian language
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
 
-    let targetLang = document.getElementById('languageSelect').value;
-    let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=it&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+document.getElementById('start-recording').onclick = function () {
+    console.log("Start recording clicked...");
+    recognition.start();
+    console.log("Speech recognition started...");
+};
 
-    let response = await fetch(url);
-    let result = await response.json();
-    console.log("Translation API response:", result);  // Debug: Log the response from the translation API
+recognition.onresult = function (event) {
+    let transcript = event.results[0][0].transcript;
+    console.log("Recognized speech:", transcript);
+    document.getElementById('textInput').value = transcript;
+    translateText();  // Automatically translate the recognized speech
+};
 
-    if (result && result[0] && result[0].length > 0) {
-        let translatedText = result[0].map(item => item[0]).join(' ');
-        console.log("Translated text:", translatedText);  // Log the translated text
+recognition.onerror = function (event) {
+    console.error("Speech recognition error:", event.error);
+};
 
-        document.getElementById('outputText').innerText = translatedText;
-
-        // Speak the translated text
-        speakText(translatedText);
-    } else {
-        console.log("Translation failed or no text available to translate.");
-        alert("Translation failed or no text available to translate.");
-    }
-}
+recognition.onend = function () {
+    console.log("Speech input ended.");
+};
