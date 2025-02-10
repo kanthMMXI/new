@@ -40,49 +40,86 @@
 <body>
     <div class="container">
         <h1>Translate Italian to Sinhala, Tamil, or Tagalog</h1>
-        <textarea id="textInput" rows="4" cols="50" placeholder="Enter Italian text or speak..."></textarea><br>
-        
-        <button id="start-recording">🎤 Speak (Italian)</button>
+        <textarea id="textInput" rows="4" cols="50" placeholder="Enter Italian text..."></textarea><br>
+        <input type="file" id="audioInput" accept="audio/*">
         <br>
-        
         <select id="languageSelect">
             <option value="si">Sinhala</option>
             <option value="ta">Tamil</option>
             <option value="tl">Tagalog</option>
         </select>
         <br>
-        
         <button onclick="translateText()">Translate</button>
-        
+        <button onclick="transcribeAudio()">Transcribe & Translate</button>
         <h2>Translation:</h2>
         <p id="outputText"></p>
-        
-        <button onclick="speakTranslation()">🔊 Speak Translation</button>
     </div>
+    <div>
+    <button id="start-recording">Start Recording</button>
+    <textarea id="transcribed-text" placeholder="Transcribed text will appear here"></textarea>
+</div>
 
-    <script src="speech-to-text.js"></script>
+<script src="speech-to-text.js"></script>
 
-    <script>
-        async function translateText() {
-            let text = document.getElementById('textInput').value;
-            let targetLang = document.getElementById('languageSelect').value;
-            let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=it&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-            
-            let response = await fetch(url);
+<script>
+    async function translateText() {
+        let text = document.getElementById('textInput').value;
+        let targetLang = document.getElementById('languageSelect').value;
+        let url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=it&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+        
+        let response = await fetch(url);
+        let result = await response.json();
+        let translatedText = result[0].map(item => item[0]).join(' ');
+
+        // Display translated text
+        document.getElementById('outputText').innerText = translatedText;
+
+        // Speak the translated text
+        speakText(translatedText);
+    }
+
+    async function transcribeAudio() {
+        let fileInput = document.getElementById("audioInput").files[0];
+        if (!fileInput) {
+            alert("Please select an audio file first!");
+            return;
+        }
+
+        let apiKey = "AIzaSyD4HjBVAbKAWC5wf98ay1b6iveuolmmDCc";
+        let url = `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`;
+
+        let reader = new FileReader();
+        reader.readAsDataURL(fileInput);
+        reader.onload = async function () {
+            let audioBase64 = reader.result.split(",")[1];
+            let requestBody = {
+                config: { encoding: "LINEAR16", languageCode: "it-IT" },
+                audio: { content: audioBase64 }
+            };
+
+            let response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
+
             let result = await response.json();
-            document.getElementById('outputText').innerText = result[0].map(item => item[0]).join(' ');
-        }
-
-        function speakTranslation() {
-            let text = document.getElementById("outputText").innerText;
-            if (!text) {
-                alert("No translated text to speak!");
-                return;
+            if (result.results) {
+                let transcript = result.results[0].alternatives[0].transcript;
+                document.getElementById("textInput").value = transcript;
+                translateText();
+            } else {
+                alert("Could not transcribe audio.");
             }
+        };
+    }
 
-            let utterance = new SpeechSynthesisUtterance(text);
-            speechSynthesis.speak(utterance);
-        }
-    </script>
+    // Function to speak text using SpeechSynthesis API
+    function speakText(text) {
+        let utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en";  // Set language for translation (you can adjust this based on the target language)
+        window.speechSynthesis.speak(utterance);
+    }
+</script>
 </body>
 </html>
